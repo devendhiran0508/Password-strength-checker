@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Password Strength Checker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: #1a1d2e;
+      border: 1px solid #2d3148;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 540px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: #a78bfa;
+    }
+
+    p.subtitle {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 1.5rem;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1.5rem;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus { border-color: #7c3aed; }
+
+    button {
+      background: #7c3aed;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.65rem 1.2rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    button:hover { background: #6d28d9; }
+
+    /* Strength meter */
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+
+    .meter-bar {
+      height: 8px;
+      background: #2d3148;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .meter-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    /* Result sections */
+    .section {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 0.6rem;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      padding: 3px 0;
+      color: #cbd5e1;
+    }
+
+    .stat-row span:last-child { color: #e2e8f0; font-weight: 500; }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 20px;
+    }
+
+    .safe   { background: #14532d; color: #4ade80; }
+    .danger { background: #450a0a; color: #f87171; }
+    .warn   { background: #422006; color: #fb923c; }
+
+    .char-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .char-item {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot.on  { background: #4ade80; }
+    .dot.off { background: #ef4444; }
+
+    .feedback-list {
+      list-style: none;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.8;
+    }
+
+    .feedback-list li::before { content: "• "; color: #7c3aed; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>🔐 Password Checker</h1>
+  <p class="subtitle">Checks strength, patterns, and real breach databases.</p>
+
+  <form method="POST" action="/">
+    <div class="input-row">
+      <input type="text" name="password" placeholder="Enter a password to check..."
+             value="{{ password or '' }}" autofocus />
+      <button type="submit">Check</button>
+    </div>
+  </form>
+
+  {% if result %}
+
+  <!-- Strength meter -->
+  <div class="meter-label">
+    <span>Strength</span>
+    <span>{{ result.score }}/100 — {{ result.label }}</span>
+  </div>
+  <div class="meter-bar">
+    <div class="meter-fill" style="
+      width: {{ result.score }}%;
+      background: {{ '#ef4444' if result.score < 40 else '#f97316' if result.score < 60 else '#22c55e' }};
+    "></div>
+  </div>
+
+  <!-- Score details -->
+  <div class="section">
+    <div class="section-title">Score Details</div>
+    <div class="stat-row"><span>Score</span><span>{{ result.score }} / 100</span></div>
+    <div class="stat-row"><span>Entropy</span><span>{{ result.entropy_bits }} bits</span></div>
+    <div class="stat-row"><span>Length</span><span>{{ result.length }} characters</span></div>
+    <div class="stat-row"><span>Charset size</span><span>{{ result.charset_size }} characters</span></div>
+  </div>
+
+  <!-- Character classes -->
+  <div class="section">
+    <div class="section-title">Character Classes</div>
+    <div class="char-grid">
+      {% for cls, present in result.char_classes.items() %}
+      <div class="char-item">
+        <div class="dot {{ 'on' if present else 'off' }}"></div>
+        {{ cls }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Breach check -->
+  <div class="section">
+    <div class="section-title">Breach Check</div>
+    <div class="stat-row">
+      <span>Status</span>
+      <span>
+        {% if result.compromised %}
+          <span class="badge danger">⚠ Compromised</span>
+        {% else %}
+          <span class="badge safe">✓ Not found in breaches</span>
+        {% endif %}
+      </span>
+    </div>
+    {% if result.hibp_count %}
+    <div class="stat-row">
+      <span>Seen in breaches</span>
+      <span>{{ "{:,}".format(result.hibp_count) }} times</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Feedback -->
+  {% if result.feedback %}
+  <div class="section">
+    <div class="section-title">Suggestions</div>
+    <ul class="feedback-list">
+      {% for tip in result.feedback %}
+      <li>{{ tip }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% endif %}
+</div>
+</body>
+</html>

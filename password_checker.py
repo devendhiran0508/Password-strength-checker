@@ -2,6 +2,9 @@ import math
 import string
 import re
 
+from pattern_detector import detect_patterns
+
+
 
 # ── 1. Charset size detection ──────────────────────────────────────────────────
 def get_charset_size(password: str) -> int:
@@ -120,6 +123,10 @@ def score_password(password: str) -> dict:
 
     if not feedback:
         feedback.append("Great password! No obvious weaknesses found.")
+
+    patterns = detect_patterns(password)
+    score = max(0, score - patterns["penalty"])   # subtract penalty, don't go below 0
+    feedback += patterns["findings"]              # add pattern warnings to feedback
 
     return {
         "password":     password,
